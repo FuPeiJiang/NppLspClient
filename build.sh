@@ -30,11 +30,13 @@ echo $PLUGIN_PATH
 COMPILER_FLAGS=(-g -d static_boehm -gc boehm -keepc -enable-globals -shared -d no_backtrace)
 
 if [ "$ARCH" = x64 ]; then
-  COMPILER_FLAGS+=()
+  COMPILER_FLAGS+=(-m64)
+  RCFLAGS+=(--target=pe-x86-64)
 else
   COMPILER_FLAGS+=(-m32)
+  RCFLAGS+=(--target=pe-i386)
 fi
 
-windres "$RC" -O coff -o "$CURRENT_DIRECTORY/$NAME_PART.res"
+windres "$RC" -O coff "${RCFLAGS[@]}" -o "$CURRENT_DIRECTORY/$NAME_PART.res"
 echo "$VEXE" -cc "$CC" "${COMPILER_FLAGS[@]}" -cflags "\"-I$CURRENT_DIRECTORY\"" "${RES_OBJ[@]}" -o "$PLUGIN_PATH" .
 "$VEXE" -cc "$CC" "${COMPILER_FLAGS[@]}" -cflags "\"-I$CURRENT_DIRECTORY\"" "${RES_OBJ[@]}" -o "$PLUGIN_PATH" .
