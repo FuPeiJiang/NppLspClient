@@ -4,8 +4,7 @@ import toml
 import os
 import util.winapi { message_box }
 
-const (
-	example_config_content = '
+const example_config_content = '
 [general]
 diag_indicator_id = 12  # indicator used to draw the squiggle lines
 # the following colors, hex notation of a rgb value, are used by the diagnostics indicator, the annotation method and the console output window
@@ -82,33 +81,33 @@ clear_reference_view_always = false  # values must be either false or true
 # auto_start_server = false
 # custom_messages = "window/progress"
 '
-)
 
 pub struct ServerConfig {
 mut:
 	message_id_counter int = -1
 pub mut:
-	mode              string
-	executable        string
-	args              string
-	port              int
-	host              string
-	auto_start_server bool
-	custom_messages   string
-	initialized       bool
+	mode                   string
+	executable             string
+	args                   string
+	port                   int
+	host                   string
+	auto_start_server      bool
+	initialization_options string = '{}'
+	custom_messages        string
+	initialized            bool
 	// open_documents []string  // used to prevent sending didOpen multiple times
 	features               ServerCapabilities
-	open_response_messages map[string]fn (json_message string)
+	open_response_messages map[int]fn (json_message string)
 }
 
-pub fn (mut sc ServerConfig) get_next_id() string {
+pub fn (mut sc ServerConfig) get_next_id() int {
 	sc.message_id_counter++
-	return sc.message_id_counter.str()
+	return sc.message_id_counter
 }
 
-pub fn (mut sc ServerConfig) init_id() string {
+pub fn (mut sc ServerConfig) init_id() int {
 	sc.message_id_counter = 0
-	return sc.message_id_counter.str()
+	return sc.message_id_counter
 }
 
 pub struct Configs {
@@ -129,7 +128,7 @@ pub mut:
 }
 
 pub fn create_default() string {
-	return lsp.example_config_content
+	return example_config_content
 }
 
 fn is_null(item toml.Any) bool {
@@ -210,13 +209,13 @@ pub fn decode_config(full_file_path string) Configs {
 		if k != '0' {
 			mut sc := ServerConfig{}
 			if is_null(doc.value('lspservers.${k}.mode')) {
-				p.console_window.log_error('$k - mandatory field missing: mode')
+				p.console_window.log_error('${k} - mandatory field missing: mode')
 				continue
 			}
 			sc.mode = doc.value('lspservers.${k}.mode').string()
 
 			if is_null(doc.value('lspservers.${k}.executable')) {
-				p.console_window.log_error('$k - mandatory field missing: executable')
+				p.console_window.log_error('${k} - mandatory field missing: executable')
 				continue
 			}
 			sc.executable = doc.value('lspservers.${k}.executable').string()
@@ -229,6 +228,10 @@ pub fn decode_config(full_file_path string) Configs {
 				sc.auto_start_server = doc.value('lspservers.${k}.auto_start_server').bool()
 			}
 
+			if !is_null(doc.value('lspservers.${k}.initialization_options')) {
+				sc.initialization_options = doc.value('lspservers.${k}.initialization_options').string()
+			}
+
 			if !is_null(doc.value('lspservers.${k}.port')) {
 				sc.port = doc.value('lspservers.${k}.port').int()
 			}
@@ -236,7 +239,7 @@ pub fn decode_config(full_file_path string) Configs {
 			if !is_null(doc.value('lspservers.${k}.host')) {
 				sc.host = doc.value('lspservers.${k}.host').string()
 			}
-			
+
 			if !is_null(doc.value('lspservers.${k}.custom_messages')) {
 				sc.custom_messages = doc.value('lspservers.${k}.custom_messages').string()
 			}
@@ -246,22 +249,22 @@ pub fn decode_config(full_file_path string) Configs {
 	}
 	if lsp_config.lspservers.len == 0 {
 		p.console_window.log_error('cannot identify any configured language server')
-		p.console_window.log_warning('$lsp_config')
+		p.console_window.log_warning('${lsp_config}')
 	}
 	return lsp_config
 }
 
 pub fn analyze_config(full_file_path string) {
-	p.console_window.log_error('Analyzing: $full_file_path')
+	p.console_window.log_error('Analyzing: ${full_file_path}')
 	content := os.read_file(full_file_path) or { '' }
 	if content.len == 0 {
-		p.console_window.log_error('Config file: $full_file_path seems to be empty')
+		p.console_window.log_error('Config file: ${full_file_path} seems to be empty')
 	}
 
 	mut in_general_section := false
 	mut in_lspservers_section := false
 	for line in content.split_into_lines() {
-		p.console_window.log_info('line: $line')
+		p.console_window.log_info('line: ${line}')
 		if line.starts_with('#') || line.trim_space().len == 0 {
 			continue
 		}
@@ -408,7 +411,7 @@ pub fn analyze_config(full_file_path string) {
 				}
 			}
 			else {
-				p.console_window.log_error('unexpected line read: $line')
+				p.console_window.log_error('unexpected line read: ${line}')
 			}
 		}
 	}
@@ -421,23 +424,23 @@ fn strip_added_comment(line string) string {
 fn check_if_boolean_value(line string) {
 	parts := strip_added_comment(line).split('=')
 	if parts.len != 2 {
-		p.console_window.log_error('$line\nexpected key=value scheme but received: ${parts.join('=')}')
+		p.console_window.log_error('${line}\nexpected key=value scheme but received: ${parts.join('=')}')
 	}
 	trimmed_string := parts[1].trim_space()
 	if trimmed_string != 'false' && trimmed_string != 'true' {
-		p.console_window.log_error('$line\nvalue must be either false or true but received: ${parts[1]}')
+		p.console_window.log_error('${line}\nvalue must be either false or true but received: ${parts[1]}')
 	}
 }
 
 fn check_if_integer_value(line string) {
 	parts := strip_added_comment(line).split('=')
 	if parts.len != 2 {
-		p.console_window.log_error('$line\nexpected key=value scheme but received: ${parts.join('=')}')
+		p.console_window.log_error('${line}\nexpected key=value scheme but received: ${parts.join('=')}')
 	}
 	trimmed_string := parts[1].trim_space()
 	if trimmed_string.u64() == 0 {
 		if trimmed_string != '0' && trimmed_string.to_lower() != '0x0' {
-			p.console_window.log_error('$line\nvalue must be an integer but received: $trimmed_string')
+			p.console_window.log_error('${line}\nvalue must be an integer but received: ${trimmed_string}')
 		}
 	}
 }
@@ -453,9 +456,9 @@ fn check_if_string_value(line string) {
 
 	if start_quote in ["'", '"'] && end_quote in ["'", '"'] {
 		if start_quote != end_quote {
-			p.console_window.log_error('$line\nvalue must be using the same start and end quotes but received: $line')
+			p.console_window.log_error('${line}\nvalue must be using the same start and end quotes but received: ${line}')
 		}
 	} else {
-		p.console_window.log_error('$line\nvalue must be a quotted string but received: $line')
+		p.console_window.log_error('${line}\nvalue must be a quotted string but received: ${line}')
 	}
 }

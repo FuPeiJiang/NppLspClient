@@ -9,18 +9,16 @@ pub type WndProc = fn (hwnd voidptr, message u32, wparam usize, lparam isize) is
 
 pub type WndEnumProc = fn (hwnd voidptr, lparam isize) bool
 
-pub const (
-	still_active    = u32(259)
-	tvif_text       = 1
-	tvif_param      = 4
-	tvgn_root       = 0
-	tvgn_next       = 1
-	tv_first        = 0x1100
-	tvm_getcount    = tv_first + 5
-	tvm_getnextitem = tv_first + 10
-	tvm_getitemw    = tv_first + 62
-	tvm_getitem     = tvm_getitemw
-)
+pub const still_active = u32(259)
+pub const tvif_text = 1
+pub const tvif_param = 4
+pub const tvgn_root = 0
+pub const tvgn_next = 1
+pub const tv_first = 0x1100
+pub const tvm_getcount = tv_first + 5
+pub const tvm_getnextitem = tv_first + 10
+pub const tvm_getitemw = tv_first + 62
+pub const tvm_getitem = tvm_getitemw
 
 pub struct RECT {
 pub mut:
@@ -133,7 +131,7 @@ pub fn end_dialog(dlg_handle voidptr, result usize) bool {
 
 fn C.CreateDialogParamW(hInstance voidptr, lpTemplateName &u16, hWndParent voidptr, lpDialogFunc WndProc, dwInitParam isize) isize
 pub fn create_dialog_param(instance voidptr, template voidptr, parent_hwnd voidptr, dialog_func WndProc, init_param isize) isize {
-	return C.CreateDialogParamW(instance, template, parent_hwnd, dialog_func, init_param)
+	return isize(C.CreateDialogParamW(instance, template, parent_hwnd, dialog_func, init_param))
 }
 
 fn C.GetClientRect(hWnd voidptr, lpRect &RECT) bool
@@ -249,7 +247,7 @@ pub fn get_exit_code_process(process_handle voidptr, exit_code &u32) bool {
 // conflicts with the one V defines itself -- ??
 // fn C.ReadFile(hFile voidptr, lpBuffer &i8, nNumberOfBytesToRead u32, lpNumberOfBytesRead &u32, lpOverlapped voidptr) bool
 pub fn read_file(file_handle voidptr, buffer &i8, number_of_bytes_to_read u32, number_of_bytes_read &u32, overlapped voidptr) bool {
-	return C.ReadFile(file_handle, buffer, number_of_bytes_to_read, C.LPDWORD(number_of_bytes_read),
+	return C.ReadFile(file_handle, buffer, number_of_bytes_to_read, number_of_bytes_read,
 		overlapped)
 }
 

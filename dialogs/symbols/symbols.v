@@ -1,22 +1,20 @@
 module symbols
 
 // A "poor man's function list"-like view of the symbols available in the current document.
-	// Currently (as of version 3.16), the LSP API only provides the name of the various symbols
-	// together with the start and end position.
-	// To make it more user-friendly, it needs to include additional information,
-	// such as the members of the structure/class, or the parameters of a function etc....
-	
-	// Here's how it should work:
-		// Sort and update the view when
-			// - opening a file
-			// - current file is saved
-			// - previous buffer is different from the current one
-		// Clear the view when
-			// - no symbols in current file
-			// - language server shuts down
-			// - document is not of interest
+//	// Currently (as of version 3.16), the LSP API only provides the name of the various symbols
+//	// together with the start and end position.
+//	// To make it more user-friendly, it needs to include additional information,
+//	// such as the members of the structure/class, or the parameters of a function etc....
 
-
+//	// Here's how it should work:
+//		// Sort and update the view when
+//			// - opening a file
+//			// - current file is saved
+//			// - previous buffer is different from the current one
+//		// Clear the view when
+//			// - no symbols in current file
+//			// - language server shuts down
+//			// - document is not of interest
 import util.winapi as api
 import notepadpp
 import scintilla as sci
@@ -24,40 +22,38 @@ import common { Symbol }
 
 #include "resource.h"
 
-const (
-	symbol_style   = u8(1)
-	symbol_map     = {
-		0: '?  '
-		1: '\u24BB\t'  // File Ⓕ
-		2: '\u24C2\t'  // Module Ⓜ
-		3: '\u24C3\t'  // Namespace Ⓝ
-		4: '\u24C5\t'  // Package Ⓟ
-		5: '\u24B8\t'  // Class Ⓒ
-		6: '\u24DC\t'  // Method ⓜ
-		7: '\u24DF\t'  // Property ⓟ
-		8: '\u24D5\t'  // Field ⓕ
-		9: '\u24D2\t'  // Constructor ⓒ
-		10: '\u24BA\t'  // Enum Ⓔ
-		11: '\u24BE\t'  // Interface Ⓘ
-		12: '\u0192\t'  // Function ƒ
-		13: '\u24CB\t'  // Variable Ⓥ
-		14: '\u2282\t'  // Constant ⊂
-		15: '\u24E2\t'  // String ⓢ
-		16: '\u24DD\t'  // Number ⓝ
-		17: '\u24B7\t'  // Boolean Ⓑ
-		18: '\u24B6\t'  // Array Ⓐ
-		19: '\u24C4\t'  // Object Ⓞ
-		20: '\u24C0\t'  // Key Ⓚ
-		21: '\u00D8\t'  // Null Ø
-		22: '\u24D4\t'  // EnumMember ⓔ
-		23: '\u24C8\t'  // Struct Ⓢ
-		24: '\u0404\t'  // Event Є
-		25: '\u24DE\t'  // Operator ⓞ
-		26: '\u24C9\t'  // TypeParameter Ⓣ
-	}
-)
+const symbol_style = u8(1)
+const symbol_map = {
+	0:  '?  '
+	1:  '\u24BB\t' // File Ⓕ
+	2:  '\u24C2\t' // Module Ⓜ
+	3:  '\u24C3\t' // Namespace Ⓝ
+	4:  '\u24C5\t' // Package Ⓟ
+	5:  '\u24B8\t' // Class Ⓒ
+	6:  '\u24DC\t' // Method ⓜ
+	7:  '\u24DF\t' // Property ⓟ
+	8:  '\u24D5\t' // Field ⓕ
+	9:  '\u24D2\t' // Constructor ⓒ
+	10: '\u24BA\t' // Enum Ⓔ
+	11: '\u24BE\t' // Interface Ⓘ
+	12: '\u0192\t' // Function ƒ
+	13: '\u24CB\t' // Variable Ⓥ
+	14: '\u2282\t' // Constant ⊂
+	15: '\u24E2\t' // String ⓢ
+	16: '\u24DD\t' // Number ⓝ
+	17: '\u24B7\t' // Boolean Ⓑ
+	18: '\u24B6\t' // Array Ⓐ
+	19: '\u24C4\t' // Object Ⓞ
+	20: '\u24C0\t' // Key Ⓚ
+	21: '\u00D8\t' // Null Ø
+	22: '\u24D4\t' // EnumMember ⓔ
+	23: '\u24C8\t' // Struct Ⓢ
+	24: '\u0404\t' // Event Є
+	25: '\u24DE\t' // Operator ⓞ
+	26: '\u24C9\t' // TypeParameter Ⓣ
+}
 
-[callconv: stdcall]
+@[callconv: stdcall]
 fn dialog_proc(hwnd voidptr, message u32, wparam usize, lparam isize) isize {
 	match int(message) {
 		C.WM_COMMAND {}
@@ -114,7 +110,7 @@ mut:
 	initialized         bool
 }
 
-[inline]
+@[inline]
 fn (mut d DockableDialog) call(msg int, wparam usize, lparam isize) isize {
 	return d.output_editor_func(d.output_editor_hwnd, u32(msg), wparam, lparam)
 }
@@ -131,7 +127,7 @@ pub fn (mut d DockableDialog) update(mut symbols []Symbol) {
 
 	for i, symbol in symbols {
 		d.symbols_location[i] = symbol
-	
+
 		sym := symbol_map[symbol.kind]
 		mut buffer := []u8{len: sym.len * 2}
 		for j := 0; j < sym.len; j++ {
@@ -145,28 +141,31 @@ pub fn (mut d DockableDialog) update(mut symbols []Symbol) {
 		d.call(sci.sci_appendtext, usize(symbol.name.len), isize(symbol.name.str))
 		d.call(sci.sci_appendtext, usize(1), isize('\n'.str))
 	}
-	
+
 	d.call(sci.sci_setreadonly, 1, 0)
 }
 
 pub fn (mut d DockableDialog) create(npp_hwnd voidptr, plugin_name string) {
-	d.output_hwnd = p.npp.create_scintilla(voidptr(0))
-	d.hwnd = voidptr(api.create_dialog_param(p.dll_instance, api.make_int_resource(C.IDD_SYMBOLSDLG), npp_hwnd, api.WndProc(dialog_proc), 0))
-	icon := api.load_image(p.dll_instance, api.make_int_resource(200), u32(C.IMAGE_ICON), 16, 16, 0)
+	d.output_hwnd = p.npp.create_scintilla(unsafe { nil })
+	d.hwnd = voidptr(api.create_dialog_param(p.dll_instance, api.make_int_resource(C.IDD_SYMBOLSDLG),
+		npp_hwnd, api.WndProc(dialog_proc), 0))
+	icon := api.load_image(p.dll_instance, api.make_int_resource(200), u32(C.IMAGE_ICON),
+		16, 16, 0)
 	d.tbdata = notepadpp.TbData{
-		client: d.hwnd
-		name: d.name
-		dlg_id: 9
-		mask: notepadpp.dws_df_cont_bottom | notepadpp.dws_icontab
-		icon_tab: icon
-		add_info: voidptr(0)
-		rc_float: api.RECT{}
-		prev_cont: -1
+		client:      d.hwnd
+		name:        d.name
+		dlg_id:      9
+		mask:        notepadpp.dws_df_cont_bottom | notepadpp.dws_icontab
+		icon_tab:    icon
+		add_info:    unsafe { nil }
+		rc_float:    api.RECT{}
+		prev_cont:   -1
 		module_name: plugin_name.to_wide()
 	}
 	p.npp.register_dialog(d.tbdata)
 	d.hide()
-	d.output_editor_func = sci.SCI_FN_DIRECT(api.send_message(d.output_hwnd, 2184, 0, 0))
+	d.output_editor_func = sci.SCI_FN_DIRECT(api.send_message(d.output_hwnd, 2184, 0,
+		0))
 	d.output_editor_hwnd = voidptr(api.send_message(d.output_hwnd, 2185, 0, 0))
 }
 
@@ -184,7 +183,7 @@ fn (mut d DockableDialog) init_scintilla() {
 	d.call(sci.sci_setcaretfore, usize(d.back_color), 0)
 
 	d.call(sci.sci_setmargins, 1, 0)
-	
+
 	// folding markers and margin setup
 	folding_marker_definitions := [
 		[sci.sc_marknum_folderopen, sci.sc_mark_arrowdown, d.back_color, d.fore_color, 0x70635C],
@@ -203,7 +202,7 @@ fn (mut d DockableDialog) init_scintilla() {
 		d.call(sci.sci_markersetbackselected, usize(marker_defines[0]), isize(marker_defines[4]))
 	}
 
-	d.call(sci.sci_setmarginmaskn, 0, sci.sc_mask_folders)  // sci.sc_mask_folders
+	d.call(sci.sci_setmarginmaskn, 0, sci.sc_mask_folders) // sci.sc_mask_folders
 	d.call(sci.sci_setmargintypen, 0, sci.sc_margin_symbol)
 	d.call(sci.sci_setmarginwidthn, 0, 14)
 	d.call(sci.sci_setmarginsensitiven, 0, 1)
@@ -213,8 +212,13 @@ fn (mut d DockableDialog) init_scintilla() {
 	d.call(sci.sci_setfoldmarginhicolour, 1, d.back_color)
 	d.call(sci.sci_setfocus, 0, 0)
 }
+
 pub fn (mut d DockableDialog) toggle() {
-	if d.is_visible { d.hide() } else { d.show() }
+	if d.is_visible {
+		d.hide()
+	} else {
+		d.show()
+	}
 }
 
 fn (mut d DockableDialog) show() {
@@ -237,7 +241,7 @@ pub fn (mut d DockableDialog) update_settings(fore_color int, back_color int, se
 fn (mut d DockableDialog) on_hotspot_click(position isize) {
 	line := int(d.call(sci.sci_linefromposition, usize(position), 0))
 	symbol := d.symbols_location[line]
-	if (symbol.file_name.len > 0) && (p.current_file_path != symbol.file_name) {
+	if symbol.file_name.len > 0 && p.current_file_path != symbol.file_name {
 		p.npp.open_document(symbol.file_name)
 	}
 	p.editor.goto_line(symbol.line)

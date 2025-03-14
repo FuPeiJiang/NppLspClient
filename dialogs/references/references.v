@@ -1,13 +1,11 @@
 module references
 
-
 // A "poor man's search window result"-like view of the found references.
 
-	// Here's how it works:
-		// each result of a new search is appended at the end of the view
-		// and thus previous results are still available
-		// but it cannot be guaranteed that they are still valid.
-
+//	// Here's how it works:
+//		// each result of a new search is appended at the end of the view
+//		// and thus previous results are still available
+//		// but it cannot be guaranteed that they are still valid.
 import util.winapi as api
 import notepadpp
 import scintilla as sci
@@ -17,14 +15,12 @@ import arrays
 
 #include "resource.h"
 
-const (
-	line_style   = u8(0)
-	header_style = u8(1)
-	error_style  = u8(2)
-	search_style = u8(3)
-)
+const line_style = u8(0)
+const header_style = u8(1)
+const error_style = u8(2)
+const search_style = u8(3)
 
-[callconv: stdcall]
+@[callconv: stdcall]
 fn dialog_proc(hwnd voidptr, message u32, wparam usize, lparam isize) isize {
 	match int(message) {
 		C.WM_COMMAND {}
@@ -60,7 +56,7 @@ fn dialog_proc(hwnd voidptr, message u32, wparam usize, lparam isize) isize {
 			p.references_window.is_visible = wparam != 0
 		}
 		C.WM_KEYUP {
-			println('wparam: $wparam ${C.VK_ESCAPE}')
+			println('wparam: ${wparam} ${C.VK_ESCAPE}')
 			if wparam == usize(C.VK_ESCAPE) {
 				p.editor.grab_focus()
 			}
@@ -90,7 +86,7 @@ mut:
 	references_map      map[u32]Reference
 }
 
-[inline]
+@[inline]
 fn (mut d DockableDialog) call(msg int, wparam usize, lparam isize) isize {
 	return d.output_editor_func(d.output_editor_hwnd, u32(msg), wparam, lparam)
 }
@@ -103,8 +99,12 @@ pub fn (mut d DockableDialog) clear() {
 }
 
 pub fn (mut d DockableDialog) update(references []Reference) {
-	if p.lsp_config.clear_reference_view_always { d.clear() }
-	if references.len == 0 { return }
+	if p.lsp_config.clear_reference_view_always {
+		d.clear()
+	}
+	if references.len == 0 {
+		return
+	}
 
 	current_last_line := usize(d.reference_cursor)
 
@@ -145,12 +145,12 @@ pub fn (mut d DockableDialog) update(references []Reference) {
 				ref += '    [line:${position + 1}] ${lines[position].trim_space()}\n'
 			}
 		} else {
-			ref = '  ERROR: expected maximum lines to be $lines.len but got $max_line_pos instead'
+			ref = '  ERROR: expected maximum lines to be ${lines.len} but got ${max_line_pos} instead'
 			mut buffer := []u8{len: ref.len * 2}
 			for j := 0; j < ref.len; j++ {
 				buffer[j * 2] = ref[j]
 				buffer[j * 2 + 1] = error_style
-			}			
+			}
 			d.call(sci.sci_addstyledtext, usize(buffer.len), isize(buffer.data))
 		}
 
@@ -160,12 +160,12 @@ pub fn (mut d DockableDialog) update(references []Reference) {
 
 		// add styled search term header
 		if search_header.len != 0 {
-			search_header = 'References found for $search_header\n'
+			search_header = 'References found for ${search_header}\n'
 			mut buffer := []u8{len: search_header.len * 2}
 			for j := 0; j < search_header.len; j++ {
 				buffer[j * 2] = search_header[j]
 				buffer[j * 2 + 1] = search_style
-			}			
+			}
 			d.call(sci.sci_addstyledtext, usize(buffer.len), isize(buffer.data))
 			search_header = ''
 			d.call(sci.sci_setfoldlevel, usize(last_line), isize(sci.sc_foldlevelheaderflag | sci.sc_foldlevelbase))
@@ -173,12 +173,12 @@ pub fn (mut d DockableDialog) update(references []Reference) {
 		}
 
 		// add styled file_header line
-		file_name__ := '  $file_name\n'
+		file_name__ := '  ${file_name}\n'
 		mut buffer := []u8{len: file_name__.len * 2}
 		for j := 0; j < file_name__.len; j++ {
 			buffer[j * 2] = file_name__[j]
 			buffer[j * 2 + 1] = header_style
-		}			
+		}
 		d.call(sci.sci_addstyledtext, usize(buffer.len), isize(buffer.data))
 		d.call(sci.sci_setfoldlevel, usize(last_line),
 			(sci.sc_foldlevelheaderflag | sci.sc_foldlevelbase) + 1)
@@ -199,25 +199,26 @@ pub fn (mut d DockableDialog) update(references []Reference) {
 }
 
 pub fn (mut d DockableDialog) create(npp_hwnd voidptr, plugin_name string) {
-	d.output_hwnd = p.npp.create_scintilla(voidptr(0))
+	d.output_hwnd = p.npp.create_scintilla(unsafe { nil })
 	d.hwnd = voidptr(api.create_dialog_param(p.dll_instance, api.make_int_resource(C.IDD_REFERENCESSDLG),
 		npp_hwnd, api.WndProc(dialog_proc), 0))
 	icon := api.load_image(p.dll_instance, api.make_int_resource(200), u32(C.IMAGE_ICON),
 		16, 16, 0)
 	d.tbdata = notepadpp.TbData{
-		client: d.hwnd
-		name: d.name
-		dlg_id: 8
-		mask: notepadpp.dws_df_cont_bottom | notepadpp.dws_icontab
-		icon_tab: icon
-		add_info: voidptr(0)
-		rc_float: api.RECT{}
-		prev_cont: -1
+		client:      d.hwnd
+		name:        d.name
+		dlg_id:      8
+		mask:        notepadpp.dws_df_cont_bottom | notepadpp.dws_icontab
+		icon_tab:    icon
+		add_info:    unsafe { nil }
+		rc_float:    api.RECT{}
+		prev_cont:   -1
 		module_name: plugin_name.to_wide()
 	}
 	p.npp.register_dialog(d.tbdata)
 	d.hide()
-	d.output_editor_func = sci.SCI_FN_DIRECT(api.send_message(d.output_hwnd, 2184, 0, 0))
+	d.output_editor_func = sci.SCI_FN_DIRECT(api.send_message(d.output_hwnd, 2184, 0,
+		0))
 	d.output_editor_hwnd = voidptr(api.send_message(d.output_hwnd, 2185, 0, 0))
 }
 
@@ -267,7 +268,11 @@ fn (mut d DockableDialog) init_scintilla() {
 }
 
 pub fn (mut d DockableDialog) toggle() {
-	if d.is_visible { d.hide() } else { d.show() }
+	if d.is_visible {
+		d.hide()
+	} else {
+		d.show()
+	}
 }
 
 fn (mut d DockableDialog) show() {
@@ -294,7 +299,7 @@ pub fn (mut d DockableDialog) update_settings(fore_color int, back_color int, se
 fn (mut d DockableDialog) on_hotspot_click(position isize) {
 	line := u32(d.call(sci.sci_linefromposition, usize(position), 0))
 	reference := d.references_map[line]
-	if (reference.file_name.len > 0) && (p.current_file_path != reference.file_name) {
+	if reference.file_name.len > 0 && p.current_file_path != reference.file_name {
 		p.npp.open_document(reference.file_name)
 	}
 	p.editor.goto_line(reference.line)

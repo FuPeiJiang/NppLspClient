@@ -70,7 +70,7 @@ pub fn (e Editor) format_document(tea TextEditArray) {
 		current_pos += isize(item.new_text.len) - isize(end_pos - start_pos)
 		e.call(sci_settargetstart, usize(start_pos), 0)
 		e.call(sci_settargetend, usize(end_pos), 0)
-		e.call(sci_replacetarget, -1, isize(item.new_text.str))
+		e.call(sci_replacetarget, usize(-1), isize(item.new_text.str))
 	}
 	e.call(sci_endundoaction, 0, 0)
 	e.call(sci_gotopos, usize(current_pos), 0)

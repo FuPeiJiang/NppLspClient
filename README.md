@@ -3,9 +3,9 @@ A [LSP](https://microsoft.github.io/language-server-protocol/) client plugin for
 
 ## Npp 8.6.3, 8.6.4 and 8.7.6 have introduced changes that disable notifications that this plugin relies on, and is therefore not compatible with these versions. Sorry for the inconvenience.
 
-***NOTE: The latest builds assume that the Folder as Workspace (faw) dialog is used.  
-This means that the rootUri component of the [initialize request](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initializeParams) sent from the client to the server  
-is set to the directory of the root item that contains the current buffer. 
+***NOTE: The latest builds assume that the Folder as Workspace (faw) dialog is used.
+This means that the rootUri component of the [initialize request](https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#initializeParams) sent from the client to the server
+is set to the directory of the root item that contains the current buffer.
 ~~If no faw dialog is used or the file is not part of one of the root elements, the directory of the file is used.~~***
 
 ## Installation
@@ -25,8 +25,8 @@ See [tips](./tips.md) for more information about usage and language server setup
 
 ## Building manually
 
-This plugin is written in the [programming language V](https://github.com/vlang/v) and must therefore be available to build this plugin.  
-Furthermore, a current version of the gcc compiler, >= version 10 recommended, must be installed.  
+This plugin is written in the [programming language V](https://github.com/vlang/v) and must therefore be available to build this plugin.
+Furthermore, a current version of the gcc compiler, >= version 10 recommended, must be installed.
 An example for the use with NppExec:
 
 ```
@@ -65,7 +65,7 @@ if $(ARCH)==x64 then
     windres "$(RC)" -O coff -o "$(CURRENT_DIRECTORY)\$(NAME_PART).res"
     echo $(VEXE) -cc $(CC) $(COMPILER_FLAGS) -cflags -static-libgcc -cflags -I$(CURRENT_DIRECTORY) $(RES_OBJ) -o $(PLUGIN_PATH) .
     $(VEXE) -cc $(CC) $(COMPILER_FLAGS) -cflags -static-libgcc -cflags -I$(CURRENT_DIRECTORY) $(RES_OBJ) -o $(PLUGIN_PATH) .
-  endif  
+  endif
 else
   if $(CC)==gcc then
     ENV_SET PATH=D:\ProgramData\Compiler\mingw32\bin

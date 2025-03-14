@@ -9,7 +9,7 @@ pub mut:
 	// all
 	method string
 	// request and notification
-	id string
+	id int
 	// request and response
 	params string
 	// request and notification
@@ -30,11 +30,7 @@ pub fn (mut m JsonMessage) from_json(f json2.Any) {
 				m.method = v.str()
 			}
 			'id' {
-				m.id = if v.type_name() == 'string' {
-					'"$v.str()"'
-				} else {
-					v.str()
-				}
+				m.id = v.int()
 			}
 			'params' {
 				m.params = v.str()
@@ -58,11 +54,11 @@ fn make_path(uri string) string {
 
 fn make_uri(path string) string {
 	escaped := path.replace_each(['\\', '/', ':', '%3A'])
-	return 'file:///$escaped'
+	return 'file:///${escaped}'
 }
 
 fn make_range(start_line u32, start_char u32, end_line u32, end_char u32) string {
-	return '"range":{"start":{"line":$start_line,"character":$start_char},"end":{"line":$end_line,"character":$end_char}}'
+	return '"range":{"start":{"line":${start_line},"character":${start_char}},"end":{"line":${end_line},"character":${end_char}}}'
 }
 
 pub struct TextDocumentIdentifier {
@@ -107,8 +103,16 @@ pub fn (mut r Range) from_json(f json2.Any) {
 	obj := f.as_map()
 	for k, v in obj {
 		match k {
-			'start' { r.start = json2.decode<Position>(v.str()) or { Position{} } }
-			'end' { r.end = json2.decode<Position>(v.str()) or { Position{} } }
+			'start' {
+				mut pos := Position{}
+				pos.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
+				r.start = pos
+			}
+			'end' {
+				mut pos := Position{}
+				pos.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
+				r.end = pos
+			}
 			else {}
 		}
 	}
@@ -125,8 +129,13 @@ pub fn (mut l Location) from_json(f json2.Any) {
 	obj := f.as_map()
 	for k, v in obj {
 		match k {
-			'uri' { l.uri = make_path(v.str()) }
-			'range' { l.range = json2.decode<Range>(v.str()) or { Range{} } }
+			'uri' {
+				l.uri = make_path(v.str())
+			}
+			'range' {
+				l.range = Range{}
+				l.range.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
+			}
 			else {}
 		}
 	}
@@ -139,7 +148,9 @@ pub mut:
 
 pub fn (mut la LocationArray) from_json(f json2.Any) {
 	for item in f.arr() {
-		la.items << json2.decode<Location>(item.str()) or { Location{} }
+		mut loc := Location{}
+		loc.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+		la.items << loc
 	}
 }
 
@@ -176,16 +187,23 @@ pub fn (mut ll LocationLink) from_json(f json2.Any) {
 	for k, v in obj {
 		match k {
 			'originSelectionRange' {
-				ll.origin_selection_range = json2.decode<Range>(v.str()) or { Range{} }
+				ll.origin_selection_range = Range{}
+				ll.origin_selection_range.from_json(json2.decode[json2.Any](v.str()) or {
+					json2.Any{}
+				})
 			}
 			'targetUri' {
 				ll.target_uri = make_path(v.str())
 			}
 			'targetRange' {
-				ll.target_range = json2.decode<Range>(v.str()) or { Range{} }
+				ll.target_range = Range{}
+				ll.target_range.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			'targetSelectionRange' {
-				ll.target_selection_range = json2.decode<Range>(v.str()) or { Range{} }
+				ll.target_selection_range = Range{}
+				ll.target_selection_range.from_json(json2.decode[json2.Any](v.str()) or {
+					json2.Any{}
+				})
 			}
 			else {}
 		}
@@ -199,7 +217,9 @@ pub mut:
 
 pub fn (mut lla LocationLinkArray) from_json(f json2.Any) {
 	for item in f.arr() {
-		lla.items << json2.decode<LocationLink>(item.str()) or { LocationLink{} }
+		mut ll := LocationLink{}
+		ll.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+		lla.items << ll
 	}
 }
 
@@ -224,15 +244,35 @@ pub fn (mut d Diagnostic) from_json(f json2.Any) {
 	obj_map := f.as_map()
 	for k, v in obj_map {
 		match k {
-			'range' { d.range = json2.decode<Range>(v.str()) or { Range{} } }
-			'severity' { d.severity = v.int() }
-			'code' { d.code = v.str() }
-			'code_description' { d.code_description = v.str() }
-			'source' { d.source = v.str() }
-			'message' { d.message = v.str() }
-			'tags' { d.tags = v.str() }
-			'related_information' { d.related_information = v.str() }
-			'data' { d.data = v.str() }
+			'range' {
+				mut range := Range{}
+				range.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
+				d.range = range
+			}
+			'severity' {
+				d.severity = v.int()
+			}
+			'code' {
+				d.code = v.str()
+			}
+			'code_description' {
+				d.code_description = v.str()
+			}
+			'source' {
+				d.source = v.str()
+			}
+			'message' {
+				d.message = v.str()
+			}
+			'tags' {
+				d.tags = v.str()
+			}
+			'related_information' {
+				d.related_information = v.str()
+			}
+			'data' {
+				d.data = v.str()
+			}
 			else {}
 		}
 	}
@@ -248,8 +288,13 @@ pub fn (mut dri DiagnosticRelatedInformation) from_json(f json2.Any) {
 	obj_map := f.as_map()
 	for k, v in obj_map {
 		match k {
-			'location' { dri.location = json2.decode<Location>(v.str()) or { Location{} } }
-			'message' { dri.message = v.str() }
+			'location' {
+				dri.location = Location{}
+				dri.location.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
+			}
+			'message' {
+				dri.message = v.str()
+			}
 			else {}
 		}
 	}
@@ -274,7 +319,9 @@ pub fn (mut pd PublishDiagnosticsParams) from_json(f json2.Any) {
 			}
 			'diagnostics' {
 				for diag in v.arr() {
-					pd.diagnostics << json2.decode<Diagnostic>(diag.str()) or { Diagnostic{} }
+					mut diag_item := Diagnostic{}
+					diag_item.from_json(json2.decode[json2.Any](diag.str()) or { json2.Any{} })
+					pd.diagnostics << diag_item
 				}
 			}
 			else {}
@@ -297,7 +344,9 @@ pub fn (mut cl CompletionList) from_json(f json2.Any) {
 			}
 			'items' {
 				for item in v.arr() {
-					cl.items << json2.decode<CompletionItem>(item.str()) or { CompletionItem{} }
+					mut ci := CompletionItem{}
+					ci.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+					cl.items << ci
 				}
 			}
 			else {}
@@ -361,7 +410,9 @@ pub mut:
 
 pub fn (mut cla CompletionItemArray) from_json(f json2.Any) {
 	for item in f.arr() {
-		cla.items << json2.decode<CompletionItem>(item.str()) or { CompletionItem{} }
+		mut ci := CompletionItem{}
+		ci.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+		cla.items << ci
 	}
 }
 
@@ -378,9 +429,9 @@ pub fn (mut sh SignatureHelp) from_json(f json2.Any) {
 		match k {
 			'signatures' {
 				for item in v.arr() {
-					sh.signatures << json2.decode<SignatureInformation>(item.str()) or {
-						SignatureInformation{}
-					}
+					mut si := SignatureInformation{}
+					si.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+					sh.signatures << si
 				}
 			}
 			'activeSignature' {
@@ -414,9 +465,9 @@ pub fn (mut si SignatureInformation) from_json(f json2.Any) {
 			}
 			'parameters' {
 				for item in v.arr() {
-					si.parameters << json2.decode<ParameterInformation>(item.str()) or {
-						ParameterInformation{}
-					}
+					mut pi := ParameterInformation{}
+					pi.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+					si.parameters << pi
 				}
 			}
 			'activeParameter' {
@@ -451,7 +502,9 @@ pub mut:
 
 pub fn (mut tea TextEditArray) from_json(f json2.Any) {
 	for item in f.arr() {
-		tea.items << json2.decode<TextEdit>(item.str()) or { TextEdit{} }
+		mut te := TextEdit{}
+		te.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+		tea.items << te
 	}
 }
 
@@ -465,8 +518,13 @@ pub fn (mut te TextEdit) from_json(f json2.Any) {
 	obj := f.as_map()
 	for k, v in obj {
 		match k {
-			'range' { te.range = json2.decode<Range>(v.str()) or { Range{} } }
-			'newText' { te.new_text = v.str() }
+			'range' {
+				te.range = Range{}
+				te.range.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
+			}
+			'newText' {
+				te.new_text = v.str()
+			}
 			else {}
 		}
 	}
@@ -529,10 +587,19 @@ pub fn (mut sdp ShowDocumentParams) from_json(f json2.Any) {
 	obj := f.as_map()
 	for k, v in obj {
 		match k {
-			'uri' { sdp.uri = v.str() }
-			'external' { sdp.external = v.bool() }
-			'takeFocus' { sdp.take_focus = v.bool() }
-			'selection' { sdp.selection = json2.decode<Range>(v.str()) or { Range{} } }
+			'uri' {
+				sdp.uri = v.str()
+			}
+			'external' {
+				sdp.external = v.bool()
+			}
+			'takeFocus' {
+				sdp.take_focus = v.bool()
+			}
+			'selection' {
+				sdp.selection = Range{}
+				sdp.selection.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
+			}
 			else {}
 		}
 	}
@@ -551,8 +618,13 @@ pub fn (mut dh DocumentHighlight) from_json(f json2.Any) {
 	obj := f.as_map()
 	for k, v in obj {
 		match k {
-			'range' { dh.range = json2.decode<Range>(v.str()) or { Range{} } }
-			'kind' { dh.kind = v.int() }
+			'range' {
+				dh.range = Range{}
+				dh.range.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
+			}
+			'kind' {
+				dh.kind = v.int()
+			}
 			else {}
 		}
 	}
@@ -565,7 +637,9 @@ pub mut:
 
 pub fn (mut dha DocumentHighlightArray) from_json(f json2.Any) {
 	for item in f.arr() {
-		dha.items << json2.decode<DocumentHighlight>(item.str()) or { DocumentHighlight{} }
+		mut dh := DocumentHighlight{}
+		dh.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+		dha.items << dh
 	}
 }
 
@@ -620,14 +694,18 @@ pub fn (mut ds DocumentSymbol) from_json(f json2.Any) {
 				ds.deprecated = v.bool()
 			}
 			'range' {
-				ds.range = json2.decode<Range>(v.str()) or { Range{} }
+				ds.range = Range{}
+				ds.range.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			'selectionRange' {
-				ds.selection_range = json2.decode<Range>(v.str()) or { Range{} }
+				ds.selection_range = Range{}
+				ds.selection_range.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			'children' {
 				for item in v.arr() {
-					ds.children << json2.decode<DocumentSymbol>(item.str()) or { DocumentSymbol{} }
+					mut ds_child := DocumentSymbol{}
+					ds_child.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+					ds.children << ds_child
 				}
 			}
 			else {}
@@ -671,12 +749,25 @@ pub fn (mut si SymbolInformation) from_json(f json2.Any) {
 	obj := f.as_map()
 	for k, v in obj {
 		match k {
-			'name' { si.name = v.str() }
-			'kind' { si.kind = v.int() }
-			'tags' { si.tags << v.arr().map(it.int()) }
-			'deprecated' { si.deprecated = v.bool() }
-			'location' { si.location = json2.decode<Location>(v.str()) or { Location{} } }
-			'containerName' { si.container_name = v.str() }
+			'name' {
+				si.name = v.str()
+			}
+			'kind' {
+				si.kind = v.int()
+			}
+			'tags' {
+				si.tags << v.arr().map(it.int())
+			}
+			'deprecated' {
+				si.deprecated = v.bool()
+			}
+			'location' {
+				si.location = Location{}
+				si.location.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
+			}
+			'containerName' {
+				si.container_name = v.str()
+			}
 			else {}
 		}
 	}
@@ -689,7 +780,9 @@ pub mut:
 
 pub fn (mut dsa DocumentSymbolArray) from_json(f json2.Any) {
 	for item in f.arr() {
-		dsa.items << json2.decode<DocumentSymbol>(item.str()) or { DocumentSymbol{} }
+		mut ds := DocumentSymbol{}
+		ds.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+		dsa.items << ds
 	}
 }
 
@@ -700,7 +793,9 @@ pub mut:
 
 pub fn (mut sia SymbolInformationArray) from_json(f json2.Any) {
 	for item in f.arr() {
-		sia.items << json2.decode<SymbolInformation>(item.str()) or { SymbolInformation{} }
+		mut si := SymbolInformation{}
+		si.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+		sia.items << si
 	}
 }
 
@@ -721,7 +816,8 @@ pub fn (mut h Hover) from_json(f json2.Any) {
 			'contents' {
 				match true {
 					v.str().starts_with('{') {
-						mc := json2.decode<MarkupContent>(v.str()) or { MarkupContent{} }
+						mut mc := MarkupContent{}
+						mc.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 						h.contents = mc.value
 					}
 					v.str().starts_with('[') {
@@ -733,7 +829,8 @@ pub fn (mut h Hover) from_json(f json2.Any) {
 				}
 			}
 			'range' {
-				h.range = json2.decode<Range>(v.str()) or { Range{} }
+				h.range = Range{}
+				h.range.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			else {}
 		}
@@ -816,7 +913,9 @@ pub mut:
 pub fn (mut cfp CreateFilesParams) from_json(f json2.Any) {
 	items := f.arr()
 	for item in items {
-		cfp.files << json2.decode<FileCreate>(item.str()) or { FileCreate{} }
+		mut fc := FileCreate{}
+		fc.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+		cfp.files << fc
 	}
 }
 
@@ -839,7 +938,9 @@ pub mut:
 pub fn (mut rfp RenameFilesParams) from_json(f json2.Any) {
 	items := f.arr()
 	for item in items {
-		rfp.files << json2.decode<FileRename>(item.str()) or { FileRename{} }
+		mut fr := FileRename{}
+		fr.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+		rfp.files << fr
 	}
 }
 
@@ -870,7 +971,9 @@ pub mut:
 pub fn (mut dfp DeleteFilesParams) from_json(f json2.Any) {
 	items := f.arr()
 	for item in items {
-		dfp.files << json2.decode<FileDelete>(item.str()) or { FileDelete{} }
+		mut fd := FileDelete{}
+		fd.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+		dfp.files << fd
 	}
 }
 
@@ -894,8 +997,10 @@ pub fn (mut rp RegistrationParams) from_json(f json2.Any) {
 	for k, v in obj {
 		match k {
 			'registrations' {
-				rp.registrations = v.arr().map(json2.decode<Registration>(it.str()) or {
-					Registration{}
+				rp.registrations = v.arr().map(fn (it json2.Any) Registration {
+					mut reg := Registration{}
+					reg.from_json(json2.decode[json2.Any](it.str()) or { json2.Any{} })
+					return reg
 				})
 			}
 			else {}
@@ -936,8 +1041,10 @@ pub fn (mut up UnregistrationParams) from_json(f json2.Any) {
 	for k, v in obj {
 		match k {
 			'unregistrations' {
-				up.unregistrations = v.arr().map(json2.decode<Unregistration>(it.str()) or {
-					Unregistration{}
+				up.unregistrations = v.arr().map(fn (it json2.Any) Unregistration {
+					mut un := Unregistration{}
+					un.from_json(json2.decode[json2.Any](it.str()) or { json2.Any{} })
+					return un
 				})
 			}
 			else {}
@@ -972,7 +1079,9 @@ pub mut:
 pub fn (mut cia ColorInformationArray) from_json(f json2.Any) {
 	items := f.arr()
 	for item in items {
-		cia.items << json2.decode<ColorInformation>(item.str()) or { ColorInformation{} }
+		mut ci := ColorInformation{}
+		ci.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+		cia.items << ci
 	}
 }
 
@@ -988,8 +1097,14 @@ pub fn (mut ci ColorInformation) from_json(f json2.Any) {
 	obj := f.as_map()
 	for k, v in obj {
 		match k {
-			'range' { ci.range = json2.decode<Range>(v.str()) or { Range{} } }
-			'color' { ci.color = json2.decode<Color>(v.str()) or { Color{} } }
+			'range' {
+				ci.range = Range{}
+				ci.range.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
+			}
+			'color' {
+				ci.color = Color{}
+				ci.color.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
+			}
 			else {}
 		}
 	}
@@ -1028,7 +1143,9 @@ pub mut:
 pub fn (mut cpa ColorPresentationArray) from_json(f json2.Any) {
 	items := f.arr()
 	for item in items {
-		cpa.items << json2.decode<ColorPresentation>(item.str()) or { ColorPresentation{} }
+		mut cp := ColorPresentation{}
+		cp.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+		cpa.items << cp
 	}
 }
 
@@ -1056,10 +1173,12 @@ pub fn (mut cp ColorPresentation) from_json(f json2.Any) {
 				cp.label = v.str()
 			}
 			'TextEdit' {
-				cp.text_edit = json2.decode<TextEdit>(v.str()) or { TextEdit{} }
+				cp.text_edit = TextEdit{}
+				cp.text_edit.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			'additionalTextEdits' {
-				text_edit_array := json2.decode<TextEditArray>(v.str()) or { TextEditArray{} }
+				mut text_edit_array := TextEditArray{}
+				text_edit_array.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 				for item in text_edit_array.items {
 					cp.additional_text_edits << item
 				}
@@ -1084,7 +1203,7 @@ fn (wfa WorkspaceFolderArray) make_lsp_message() string {
 	mut folders__ := []string{}
 	for folder in wfa.folders {
 		uri_path := make_uri(folder.uri)
-		folders__ << '{"uri":"$uri_path","name":"$folder.name"}'
+		folders__ << '{"uri":"${uri_path}","name":"${folder.name}"}'
 	}
 	return '[${folders__.join(',')}]'
 }
@@ -1104,7 +1223,7 @@ fn (fea FileEventArray) make_lsp_message() string {
 	mut changes := []string{}
 	for event in fea.events {
 		uri_path := make_uri(event.uri)
-		changes << '{"uri":"$uri_path","type":event.type__}'
+		changes << '{"uri":"${uri_path}","type":event.type__}'
 	}
 	return '[${changes.join(',')}]'
 }
@@ -1118,7 +1237,7 @@ fn (fca FileCreateArray) make_lsp_message() string {
 	mut files__ := []string{}
 	for f in fca.files {
 		uri_path := make_uri(f.uri)
-		files__ << '{"uri":"$uri_path"}'
+		files__ << '{"uri":"${uri_path}"}'
 	}
 	return '[${files__.join(',')}]'
 }
@@ -1132,7 +1251,7 @@ fn (fda FileDeleteArray) make_lsp_message() string {
 	mut files__ := []string{}
 	for f in fda.files {
 		uri_path := make_uri(f.uri)
-		files__ << '{"uri":"$uri_path"}'
+		files__ << '{"uri":"${uri_path}"}'
 	}
 	return '[${files__.join(',')}]'
 }
@@ -1147,7 +1266,7 @@ fn (fra FileRenameArray) make_lsp_message() string {
 	for f in fra.files {
 		old_uri_path := make_uri(f.old_uri)
 		new_uri_path := make_uri(f.new_uri)
-		files__ << '{"oldUri":"$old_uri_path","newUri":"$new_uri_path"}'
+		files__ << '{"oldUri":"${old_uri_path}","newUri":"${new_uri_path}"}'
 	}
 	return '[${files__.join(',')}]'
 }
@@ -1182,8 +1301,10 @@ pub fn (mut cp ConfigurationParams) from_json(f json2.Any) {
 	for k, v in obj {
 		match k {
 			'items' {
-				cp.items = v.arr().map(json2.decode<ConfigurationItem>(it.str()) or {
-					ConfigurationItem{}
+				cp.items = v.arr().map(fn (it json2.Any) ConfigurationItem {
+					mut ci := ConfigurationItem{}
+					ci.from_json(json2.decode[json2.Any](it.str()) or { json2.Any{} })
+					return ci
 				})
 			}
 			else {}

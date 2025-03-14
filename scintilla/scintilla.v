@@ -2,7 +2,7 @@ module scintilla
 
 import util.winapi { send_message }
 
-pub type SCI_FN_DIRECT = fn (hwnd isize, msg u32, param usize, lparam isize) isize
+pub type SCI_FN_DIRECT = fn (hwnd voidptr, msg u32, param usize, lparam isize) isize
 
 pub struct SciNotifyHeader {
 pub mut:
@@ -88,7 +88,7 @@ pub mut:
 	eol_info_style            int   = 42
 }
 
-[inline]
+@[inline]
 fn (e Editor) call(msg int, wparam usize, lparam isize) isize {
 	return e.current_func(e.current_hwnd, u32(msg), wparam, lparam)
 

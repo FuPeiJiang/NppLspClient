@@ -1,13 +1,11 @@
 module diagnostics
 
-
 // A view of the found problems reported by the currently used language server.
-	
-	// Here's how it should work:
-		// The view is refreshed each time the server reports diagnostic messages or
-		// when switching from one ls to another and stored diagnostics are available.
-		// Sorted by level: first Error, then Warning and finally Info and Hints.
 
+//	// Here's how it should work:
+//		// The view is refreshed each time the server reports diagnostic messages or
+//		// when switching from one ls to another and stored diagnostics are available.
+//		// Sorted by level: first Error, then Warning and finally Info and Hints.
 import util.winapi as api
 import notepadpp
 import scintilla as sci
@@ -15,7 +13,7 @@ import common { DiagMessage }
 
 #include "resource.h"
 
-[callconv: stdcall]
+@[callconv: stdcall]
 fn dialog_proc(hwnd voidptr, message u32, wparam usize, lparam isize) isize {
 	match int(message) {
 		C.WM_COMMAND {}
@@ -51,12 +49,10 @@ fn dialog_proc(hwnd voidptr, message u32, wparam usize, lparam isize) isize {
 	return 0
 }
 
-const (
-	error_style   = u8(1)
-	warning_style = u8(2)
-	info_style    = u8(3)
-	hint_style    = u8(4)
-)
+const error_style = u8(1)
+const warning_style = u8(2)
+const info_style = u8(3)
+const hint_style = u8(4)
 
 pub struct DockableDialog {
 	name &u16 = 'LSP diagnostics output'.to_wide()
@@ -77,7 +73,7 @@ mut:
 	current_messages    []DiagMessage
 }
 
-[inline]
+@[inline]
 fn (mut d DockableDialog) call(msg int, wparam usize, lparam isize) isize {
 	return d.output_editor_func(d.output_editor_hwnd, u32(msg), wparam, lparam)
 }
@@ -88,7 +84,7 @@ pub fn (mut d DockableDialog) clear(language_server string) {
 }
 
 fn (mut d DockableDialog) display(msg DiagMessage) {
-	text := '$msg.file_name [line:$msg.line col:$msg.column] - $msg.message\n'
+	text := '${msg.file_name} [line:${msg.line} col:${msg.column}] - ${msg.message}\n'
 	d.call(sci.sci_setcurrentpos, usize(d.call(sci.sci_getlength, 0, 0)), 0)
 	mut buffer := vcalloc(text.len * 2)
 	unsafe {
@@ -115,19 +111,20 @@ pub fn (mut d DockableDialog) update(language_server string, messages []DiagMess
 }
 
 pub fn (mut d DockableDialog) create(npp_hwnd voidptr, plugin_name string) {
-	d.output_hwnd = p.npp.create_scintilla(voidptr(0))
+	d.output_hwnd = p.npp.create_scintilla(unsafe { nil })
 	d.hwnd = voidptr(api.create_dialog_param(p.dll_instance, api.make_int_resource(C.IDD_DIAGNOSTICSDLG),
 		npp_hwnd, api.WndProc(dialog_proc), 0))
-	icon := api.load_image(p.dll_instance, api.make_int_resource(200), u32(C.IMAGE_ICON), 16, 16, 0)
+	icon := api.load_image(p.dll_instance, api.make_int_resource(200), u32(C.IMAGE_ICON),
+		16, 16, 0)
 	d.tbdata = notepadpp.TbData{
-		client: d.hwnd
-		name: d.name
-		dlg_id: 7
-		mask: notepadpp.dws_df_cont_bottom | notepadpp.dws_icontab
-		icon_tab: icon
-		add_info: voidptr(0)
-		rc_float: api.RECT{}
-		prev_cont: -1
+		client:      d.hwnd
+		name:        d.name
+		dlg_id:      7
+		mask:        notepadpp.dws_df_cont_bottom | notepadpp.dws_icontab
+		icon_tab:    icon
+		add_info:    unsafe { nil }
+		rc_float:    api.RECT{}
+		prev_cont:   -1
 		module_name: plugin_name.to_wide()
 	}
 	p.npp.register_dialog(d.tbdata)
@@ -141,21 +138,25 @@ fn (mut d DockableDialog) init_scintilla() {
 	d.call(sci.sci_stylesetfore, 32, d.fore_color)
 	d.call(sci.sci_stylesetback, 32, d.back_color)
 	d.call(sci.sci_styleclearall, 0, 0)
-	d.call(sci.sci_stylesetfore, diagnostics.error_style, d.error_color)
-	d.call(sci.sci_stylesethotspot, diagnostics.error_style, 1)
-	d.call(sci.sci_stylesetfore, diagnostics.warning_style, d.warning_color)
-	d.call(sci.sci_stylesethotspot, diagnostics.warning_style, 1)
-	d.call(sci.sci_stylesetfore, diagnostics.info_style, d.fore_color)
-	d.call(sci.sci_stylesethotspot, diagnostics.info_style, 1)
-	d.call(sci.sci_stylesetfore, diagnostics.hint_style, d.fore_color)
-	d.call(sci.sci_stylesethotspot, diagnostics.hint_style, 1)
+	d.call(sci.sci_stylesetfore, error_style, d.error_color)
+	d.call(sci.sci_stylesethotspot, error_style, 1)
+	d.call(sci.sci_stylesetfore, warning_style, d.warning_color)
+	d.call(sci.sci_stylesethotspot, warning_style, 1)
+	d.call(sci.sci_stylesetfore, info_style, d.fore_color)
+	d.call(sci.sci_stylesethotspot, info_style, 1)
+	d.call(sci.sci_stylesetfore, hint_style, d.fore_color)
+	d.call(sci.sci_stylesethotspot, hint_style, 1)
 	d.call(sci.sci_setselback, 1, d.selected_text_color)
 	d.call(sci.sci_setmargins, 0, 0)
 }
 
 pub fn (mut d DockableDialog) toggle() {
 	// d.call(sci.sci_setfocus, 0, 0)
-	if d.is_visible { d.hide() } else { d.show() }
+	if d.is_visible {
+		d.hide()
+	} else {
+		d.show()
+	}
 }
 
 fn (mut d DockableDialog) show() {
@@ -183,7 +184,7 @@ pub fn (mut d DockableDialog) update_settings(fore_color int, back_color int, er
 fn (mut d DockableDialog) on_hotspot_click(position isize) {
 	line := d.call(sci.sci_linefromposition, usize(position), 0)
 	diag_message := d.current_messages[line]
-	if (diag_message.file_name.len > 0) && (p.current_file_path != diag_message.file_name) {
+	if diag_message.file_name.len > 0 && p.current_file_path != diag_message.file_name {
 		p.npp.open_document(diag_message.file_name)
 	}
 	p.editor.goto_line(diag_message.line)

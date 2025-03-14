@@ -3,6 +3,7 @@ module notepadpp
 import util.winapi { RECT, create_unicode_buffer, send_message }
 
 pub struct TbData {
+pub mut:
 	client voidptr
 	// client Window Handle
 	name &u16 = &u16(0)
@@ -45,11 +46,11 @@ struct ToolbarIcons {
 }
 
 pub struct Npp {
-mut:
+pub mut:
 	hwnd voidptr
 }
 
-[inline]
+@[inline]
 fn (n Npp) call(msg int, wparam usize, lparam isize) isize {
 	return send_message(n.hwnd, u32(msg), wparam, lparam)
 }
@@ -110,15 +111,15 @@ pub fn (n Npp) create_scintilla(parent_hwnd voidptr) voidptr {
 }
 
 pub fn (n Npp) register_dialog(tbdata TbData) {
-	n.call(nppm_dmmregasdckdlg, 0, voidptr(&tbdata))
+	n.call(nppm_dmmregasdckdlg, 0, isize(&tbdata))
 }
 
 pub fn (n Npp) show_dialog(hwnd voidptr) {
-	n.call(nppm_dmmshow, 0, hwnd)
+	n.call(nppm_dmmshow, 0, isize(hwnd))
 }
 
 pub fn (n Npp) hide_dialog(hwnd voidptr) {
-	n.call(nppm_dmmhide, 0, hwnd)
+	n.call(nppm_dmmhide, 0, isize(hwnd))
 }
 
 pub fn (n Npp) get_editor_default_background_color() int {

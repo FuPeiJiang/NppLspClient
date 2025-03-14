@@ -71,9 +71,8 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 		match k {
 			'textDocumentSync' {
 				if v.str().starts_with('{') {
-					sync_opt := json2.decode<TextDocumentSyncOptions>(v.str()) or {
-						TextDocumentSyncOptions{}
-					}
+					mut sync_opt := TextDocumentSyncOptions{}
+					sync_opt.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.text_document_sync = sync_opt.change
 					sc.send_open_close_notif = sync_opt.open_close
 					sc.send_save_notif = sync_opt.save_options
@@ -86,7 +85,8 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 			}
 			'hoverProvider' {
 				if v.str().starts_with('{') {
-					ho := json2.decode<HoverOptions>(v.str()) or { HoverOptions{} }
+					mut ho := HoverOptions{}
+					ho.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.hover_provider = true
 					sc.hover_work_done_provider = ho.work_done_progress
 				} else {
@@ -94,18 +94,19 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 				}
 			}
 			'completionProvider' {
-				sc.completion_provider = json2.decode<CompletionOptions>(v.str()) or {
-					CompletionOptions{}
-				}
+				sc.completion_provider = CompletionOptions{}
+				sc.completion_provider.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			'signatureHelpProvider' {
-				sc.signature_help_provider = json2.decode<SignatureHelpOptions>(v.str()) or {
-					SignatureHelpOptions{}
-				}
+				sc.signature_help_provider = SignatureHelpOptions{}
+				sc.signature_help_provider.from_json(json2.decode[json2.Any](v.str()) or {
+					json2.Any{}
+				})
 			}
 			'definitionProvider' {
 				if v.str().starts_with('{') {
-					do := json2.decode<DefinitionOptions>(v.str()) or { DefinitionOptions{} }
+					mut do := DefinitionOptions{}
+					do.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.definition_provider = true
 					sc.definition_work_done_provider = do.work_done_progress
 				} else {
@@ -114,9 +115,8 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 			}
 			'typeDefinitionProvider' {
 				if v.str().starts_with('{') {
-					tdo := json2.decode<TypeDefinitionOptions>(v.str()) or {
-						TypeDefinitionOptions{}
-					}
+					mut tdo := TypeDefinitionOptions{}
+					tdo.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.type_definition_provider = true
 					sc.type_definition_work_done_provider = tdo.work_done_progress
 				} else {
@@ -125,9 +125,8 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 			}
 			'implementationProvider' {
 				if v.str().starts_with('{') {
-					io := json2.decode<ImplementationOptions>(v.str()) or {
-						ImplementationOptions{}
-					}
+					mut io := ImplementationOptions{}
+					io.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.implementation_provider = true
 					sc.implementation_work_done_provider = io.work_done_progress
 				} else {
@@ -136,7 +135,8 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 			} // | ImplementationOptions | ImplementationRegistrationOptions
 			'referencesProvider' {
 				if v.str().starts_with('{') {
-					ro := json2.decode<ReferenceOptions>(v.str()) or { ReferenceOptions{} }
+					mut ro := ReferenceOptions{}
+					ro.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.references_provider = true
 					sc.references_work_done_provider = ro.work_done_progress
 				} else {
@@ -145,9 +145,8 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 			} // | ReferenceOptions
 			'documentHighlightProvider' {
 				if v.str().starts_with('{') {
-					dho := json2.decode<DocumentHighlightOptions>(v.str()) or {
-						DocumentHighlightOptions{}
-					}
+					mut dho := DocumentHighlightOptions{}
+					dho.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.document_highlight_provider = true
 					sc.document_highlight_work_done_provider = dho.work_done_progress
 				} else {
@@ -156,9 +155,8 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 			}
 			'documentSymbolProvider' {
 				if v.str().starts_with('{') {
-					dso := json2.decode<DocumentSymbolOptions>(v.str()) or {
-						DocumentSymbolOptions{}
-					}
+					mut dso := DocumentSymbolOptions{}
+					dso.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.document_symbol_provider = true
 					sc.document_symbol_work_done_provider = dso.work_done_progress
 				} else {
@@ -170,7 +168,8 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 			} // | WorkspaceSymbolOptions
 			'codeActionProvider' {
 				if v.str().starts_with('{') {
-					cao := json2.decode<CodeActionOptions>(v.str()) or { CodeActionOptions{} }
+					mut cao := CodeActionOptions{}
+					cao.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.code_action_provider = cao.code_action_kinds.len > 0
 					sc.code_action_resolve_provider = cao.resolve_provider
 				} else {
@@ -178,14 +177,14 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 				}
 			} // |
 			'codeLensProvider' {
-				clo := json2.decode<CodeLensOptions>(v.str()) or { CodeLensOptions{} }
+				mut clo := CodeLensOptions{}
+				clo.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 				sc.code_lens_provider = clo.resolve_provider
 			}
 			'documentFormattingProvider' {
 				if v.str().starts_with('{') {
-					dfo := json2.decode<DocumentFormattingOptions>(v.str()) or {
-						DocumentFormattingOptions{}
-					}
+					mut dfo := DocumentFormattingOptions{}
+					dfo.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.document_formatting_provider = true
 					sc.document_formatting_work_done_provider = dfo.work_done_progress
 				} else {
@@ -193,14 +192,14 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 				}
 			}
 			'documentOnTypeFormattingProvider' {
-				dotfo := json2.decode<DocumentOnTypeFormattingOptions>(v.str()) or {
-					DocumentOnTypeFormattingOptions{}
-				}
+				mut dotfo := DocumentOnTypeFormattingOptions{}
+				dotfo.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 				sc.document_on_type_formatting_provider = dotfo.first_trigger_character.len > 0
 			}
 			'renameProvider' {
 				if v.str().starts_with('{') {
-					ro := json2.decode<RenameOptions>(v.str()) or { RenameOptions{} }
+					mut ro := RenameOptions{}
+					ro.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.rename_provider = true
 					sc.rename_work_done_provider = ro.work_done_progress
 				} else {
@@ -208,12 +207,14 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 				}
 			}
 			'documentLinkProvider' {
-				dlo := json2.decode<DocumentLinkOptions>(v.str()) or { DocumentLinkOptions{} }
+				mut dlo := DocumentLinkOptions{}
+				dlo.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 				sc.document_link_provider = dlo.resolve_provider
 			}
 			'colorProvider' {
 				if v.str().starts_with('{') {
-					dco := json2.decode<DocumentColorOptions>(v.str()) or { DocumentColorOptions{} }
+					mut dco := DocumentColorOptions{}
+					dco.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.color_provider = true
 					sc.color_work_done_provider = dco.work_done_progress
 				} else {
@@ -222,7 +223,8 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 			}
 			'declarationProvider' {
 				if v.str().starts_with('{') {
-					do := json2.decode<DeclarationOptions>(v.str()) or { DeclarationOptions{} }
+					mut do := DeclarationOptions{}
+					do.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.declaration_provider = true
 					sc.declaration_work_done_provider = do.work_done_progress
 				} else {
@@ -230,14 +232,16 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 				}
 			}
 			'executeCommandProvider' {
-				eco := json2.decode<ExecuteCommandOptions>(v.str()) or { ExecuteCommandOptions{} }
+				mut eco := ExecuteCommandOptions{}
+				eco.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 				sc.execute_command_provider = true
 				sc.execute_command_work_done_provider = eco.work_done_progress
 				sc.execute_commands = eco.commands
 			}
 			'foldingRangeProvider' {
 				if v.str().starts_with('{') {
-					fro := json2.decode<FoldingRangeOptions>(v.str()) or { FoldingRangeOptions{} }
+					mut fro := FoldingRangeOptions{}
+					fro.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.folding_range_provider = true
 					sc.folding_range_work_done_provider = fro.work_done_progress
 				} else {
@@ -245,15 +249,15 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 				}
 			}
 			'semanticTokensProvider' {
-				sto := json2.decode<SemanticTokensOptions>(v.str()) or { SemanticTokensOptions{} }
+				mut sto := SemanticTokensOptions{}
+				sto.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 				sc.semantic_tokens_provider = true
 				sc.semantic_tokens_work_done_provider = sto.work_done_progress
 			}
 			'documentRangeFormattingProvider' {
 				if v.str().starts_with('{') {
-					drfo := json2.decode<DocumentRangeFormattingOptions>(v.str()) or {
-						DocumentRangeFormattingOptions{}
-					}
+					mut drfo := DocumentRangeFormattingOptions{}
+					drfo.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.document_range_formatting_provider = true
 					sc.document_range_formatting_work_done_provider = drfo.work_done_progress
 				} else {
@@ -262,9 +266,8 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 			}
 			'selectionRangeProvider' {
 				if v.str().starts_with('{') {
-					sro := json2.decode<SelectionRangeOptions>(v.str()) or {
-						SelectionRangeOptions{}
-					}
+					mut sro := SelectionRangeOptions{}
+					sro.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.selection_range_provider = true
 					sc.selection_range_work_done_provider = sro.work_done_progress
 				} else {
@@ -273,9 +276,8 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 			}
 			'linkedEditingRangeProvider' {
 				if v.str().starts_with('{') {
-					lero := json2.decode<LinkedEditingRangeOptions>(v.str()) or {
-						LinkedEditingRangeOptions{}
-					}
+					mut lero := LinkedEditingRangeOptions{}
+					lero.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.linked_editing_range_provider = true
 					sc.linked_editing_range_work_done_provider = lero.work_done_progress
 				} else {
@@ -284,7 +286,8 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 			}
 			'callHierarchyProvider' {
 				if v.str().starts_with('{') {
-					cho := json2.decode<CallHierarchyOptions>(v.str()) or { CallHierarchyOptions{} }
+					mut cho := CallHierarchyOptions{}
+					cho.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.call_hierarchy_provider = true
 					sc.call_hierarchy_work_done_provider = cho.work_done_progress
 				} else {
@@ -293,7 +296,8 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 			}
 			'monikerProvider' {
 				if v.str().starts_with('{') {
-					mo := json2.decode<MonikerOptions>(v.str()) or { MonikerOptions{} }
+					mut mo := MonikerOptions{}
+					mo.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					sc.moniker_provider = v.bool()
 					sc.moniker_work_done_provider = mo.work_done_progress
 				} else {
@@ -302,9 +306,10 @@ pub fn (mut sc ServerCapabilities) from_json(f json2.Any) {
 			}
 			'workspace' {
 				sc.supports_workspace_capabilities = true
-				sc.workspace_capabilities = json2.decode<WorkspaceCapabilities>(v.str()) or {
-					WorkspaceCapabilities{}
-				}
+				sc.workspace_capabilities = WorkspaceCapabilities{}
+				sc.workspace_capabilities.from_json(json2.decode[json2.Any](v.str()) or {
+					json2.Any{}
+				})
 			}
 			// 'experimental' { sc.experimental = v.str() }
 			else {}
@@ -370,7 +375,8 @@ pub fn (mut tdso TextDocumentSyncOptions) from_json(f json2.Any) {
 			'save' {
 				if v.str().starts_with('{') {
 					tdso.save_options = true
-					so := json2.decode<SaveOptions>(v.str()) or { SaveOptions{} }
+					mut so := SaveOptions{}
+					so.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 					tdso.include_text = so.include_text
 				} else {
 					tdso.save_options = v.bool()
@@ -451,12 +457,12 @@ pub fn (mut wc WorkspaceCapabilities) from_json(f json2.Any) {
 	for k, v in obj {
 		match k {
 			'workspaceFolders' {
-				wc.workspace_folders = json2.decode<WorkspaceFoldersServerCapabilities>(v.str()) or {
-					WorkspaceFoldersServerCapabilities{}
-				}
+				wc.workspace_folders = WorkspaceFoldersServerCapabilities{}
+				wc.workspace_folders.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			'fileOperations' {
-				wc.file_operations = json2.decode<FileOperation>(v.str()) or { FileOperation{} }
+				wc.file_operations = FileOperation{}
+				wc.file_operations.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			else {}
 		}
@@ -507,39 +513,33 @@ pub fn (mut fo FileOperation) from_json(f json2.Any) {
 		match k {
 			'didCreate' {
 				fo.did_create_supported = true
-				fo.did_create = json2.decode<FileOperationRegistrationOptions>(v.str()) or {
-					FileOperationRegistrationOptions{}
-				}
+				fo.did_create = FileOperationRegistrationOptions{}
+				fo.did_create.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			'willCreate' {
 				fo.will_create_supported = true
-				fo.will_create = json2.decode<FileOperationRegistrationOptions>(v.str()) or {
-					FileOperationRegistrationOptions{}
-				}
+				fo.will_create = FileOperationRegistrationOptions{}
+				fo.will_create.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			'didRename' {
 				fo.did_rename_supported = true
-				fo.did_rename = json2.decode<FileOperationRegistrationOptions>(v.str()) or {
-					FileOperationRegistrationOptions{}
-				}
+				fo.did_rename = FileOperationRegistrationOptions{}
+				fo.did_rename.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			'willRename' {
 				fo.will_rename_supported = true
-				fo.will_rename = json2.decode<FileOperationRegistrationOptions>(v.str()) or {
-					FileOperationRegistrationOptions{}
-				}
+				fo.will_rename = FileOperationRegistrationOptions{}
+				fo.will_rename.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			'didDelete' {
 				fo.did_delete_supported = true
-				fo.did_delete = json2.decode<FileOperationRegistrationOptions>(v.str()) or {
-					FileOperationRegistrationOptions{}
-				}
+				fo.did_delete = FileOperationRegistrationOptions{}
+				fo.did_delete.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			'willDelete' {
 				fo.will_delete_supported = true
-				fo.will_delete = json2.decode<FileOperationRegistrationOptions>(v.str()) or {
-					FileOperationRegistrationOptions{}
-				}
+				fo.will_delete = FileOperationRegistrationOptions{}
+				fo.will_delete.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			else {}
 		}
@@ -554,7 +554,9 @@ pub mut:
 pub fn (mut foro FileOperationRegistrationOptions) from_json(f json2.Any) {
 	items := f.arr()
 	for item in items {
-		foro.filters << json2.decode<FileOperationFilter>(item.str()) or { FileOperationFilter{} }
+		mut fof := FileOperationFilter{}
+		fof.from_json(json2.decode[json2.Any](item.str()) or { json2.Any{} })
+		foro.filters << fof
 	}
 }
 
@@ -573,9 +575,8 @@ pub fn (mut fof FileOperationFilter) from_json(f json2.Any) {
 				fof.scheme = v.str()
 			}
 			'pattern' {
-				fof.pattern = json2.decode<FileOperationPattern>(v.str()) or {
-					FileOperationPattern{}
-				}
+				fof.pattern = FileOperationPattern{}
+				fof.pattern.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			else {}
 		}
@@ -613,9 +614,8 @@ pub fn (mut fop FileOperationPattern) from_json(f json2.Any) {
 				fop.matches = v.str()
 			}
 			'options' {
-				fop.options = json2.decode<FileOperationPatternOptions>(v.str()) or {
-					FileOperationPatternOptions{}
-				}
+				fop.options = FileOperationPatternOptions{}
+				fop.options.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			else {}
 		}
@@ -884,9 +884,8 @@ pub fn (mut sto SemanticTokensOptions) from_json(f json2.Any) {
 				sto.work_done_progress = v.bool()
 			}
 			'legend' {
-				sto.legend = json2.decode<SemanticTokensLegend>(v.str()) or {
-					SemanticTokensLegend{}
-				}
+				sto.legend = SemanticTokensLegend{}
+				sto.legend.from_json(json2.decode[json2.Any](v.str()) or { json2.Any{} })
 			}
 			'range' {}
 			'full' {}

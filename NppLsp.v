@@ -17,12 +17,10 @@ fn C._vinit(int, voidptr)
 fn C._vcleanup()
 fn C.GC_INIT()
 
-const (
-	plugin_name        = 'NppLspClient'
-	configuration_file = 'NppLspClientConfig.toml'
-	log_file           = 'NppLspClient.log'
-	max_path           = 260
-)
+const plugin_name = 'NppLspClient'
+const configuration_file = 'NppLspClientConfig.toml'
+const log_file = 'NppLspClient.log'
+const max_path = 260
 
 __global (
 	p Plugin
@@ -61,7 +59,7 @@ pub mut:
 	file_version_map     map[u64]int
 	workspaces           []string
 
-	check_ls             fn(auto_start bool) = check_ls_status
+	check_ls fn (auto_start bool) = check_ls_status
 }
 
 pub struct NppData {
@@ -72,9 +70,8 @@ pub mut:
 }
 
 fn (nd NppData) is_valid(handle voidptr) bool {
-	return handle == nd.npp_handle || 
-		   handle == nd.scintilla_main_handle ||
-		   handle == nd.scintilla_second_handle
+	return handle == nd.npp_handle || handle == nd.scintilla_main_handle
+		|| handle == nd.scintilla_second_handle
 }
 
 struct FuncItem {
@@ -86,17 +83,17 @@ mut:
 	p_sh_key      voidptr
 }
 
-[export: isUnicode]
+@[export: isUnicode]
 fn is_unicode() bool {
 	return true
 }
 
-[export: getName]
+@[export: getName]
 fn get_name() &u16 {
 	return plugin_name.to_wide()
 }
 
-[export: setInfo]
+@[export: setInfo]
 fn set_info(nppData NppData) {
 	p.npp_data = nppData
 	p.npp = notepadpp.Npp{p.npp_data.npp_handle}
@@ -113,7 +110,7 @@ fn set_info(nppData NppData) {
 	p.symbols_window.create(p.npp_data.npp_handle, plugin_name)
 }
 
-[export: beNotified]
+@[export: beNotified]
 fn be_notified(notification &sci.SCNotification) {
 	if !p.npp_data.is_valid(notification.nmhdr.hwnd_from) {
 		return
@@ -176,16 +173,16 @@ fn be_notified(notification &sci.SCNotification) {
 
 				// Saving the old buffer state if it has not been closed in the meantime.
 				if p.working_buffer_id in p.file_version_map {
-					p.console_window.log_info('Saving the state of the previous buffer ($p.working_buffer_id) : $p.current_file_version')
+					p.console_window.log_info('Saving the state of the previous buffer (${p.working_buffer_id}) : ${p.current_file_version}')
 					p.file_version_map[p.working_buffer_id] = p.current_file_version
 				}
 
 				// Assign new buffer as working buffer
 				p.working_buffer_id = u64(notification.nmhdr.id_from)
-				p.console_window.log_info('Assigned new working buffer: $p.working_buffer_id')
+				p.console_window.log_info('Assigned new working buffer: ${p.working_buffer_id}')
 
 				p.current_file_version = p.file_version_map[p.working_buffer_id] or { -1 }
-				p.console_window.log_info('The last used file version for $p.working_buffer_id ($p.current_file_path) is: $p.current_file_version')
+				p.console_window.log_info('The last used file version for ${p.working_buffer_id} (${p.current_file_path}) is: ${p.current_file_version}')
 
 				// V's map behaviour ensures that a newly added object receives an intial value of -1.
 				// If this is the case, it must be a new buffer.
@@ -219,12 +216,12 @@ fn be_notified(notification &sci.SCNotification) {
 		// using nppn_filebeforeclose because it is to late to get the file_name with nppn_fileclosed
 		notepadpp.nppn_filebeforeclose {
 			if p.document_is_of_interest {
-				p.console_window.log_info('>>> Items in current map: $p.file_version_map')
+				p.console_window.log_info('>>> Items in current map: ${p.file_version_map}')
 				current_filename := p.npp.get_filename_from_id(notification.nmhdr.id_from)
 				lsp.on_file_closed(current_filename)
 				p.console_window.log_info('>>> Removing ${u64(notification.nmhdr.id_from)} from map')
 				p.file_version_map.delete(u64(notification.nmhdr.id_from))
-				p.console_window.log_info('>>> $p.file_version_map')
+				p.console_window.log_info('>>> ${p.file_version_map}')
 			}
 		}
 		notepadpp.nppn_filebeforesave {
@@ -270,19 +267,22 @@ fn be_notified(notification &sci.SCNotification) {
 						start_line := p.editor.line_from_position(usize(notification.position))
 						line_start_pos := p.editor.position_from_line(start_line)
 						start_char := u32(notification.position) - line_start_pos
-						mut range_length := u32(notification.length)
 						mut content := ''
 
 						is_insertion := mod_type & sci.sc_mod_inserttext == sci.sc_mod_inserttext
 						if is_insertion {
 							p.end_line = start_line
 							p.end_char = start_char
-							range_length = 0
 							content = unsafe { cstring_to_vstring(notification.text)[..int(notification.length)] }
+						} else {
+							p.end_line = p.editor.line_from_position(usize(notification.position +
+								notification.length))
+							line_end_pos := p.editor.position_from_line(p.end_line)
+							p.end_char = u32(notification.position + notification.length) - line_end_pos
 						}
 
 						lsp.on_buffer_modified(p.current_file_path, start_line, start_char,
-							p.end_line, p.end_char, range_length, content)
+							p.end_line, p.end_char, content)
 
 						if notification.length == 1 && is_insertion {
 							if !p.editor.autocompletion_is_active() {
@@ -292,6 +292,8 @@ fn be_notified(notification &sci.SCNotification) {
 							lsp.on_signature_help(p.current_file_path, start_line, start_char + 1,
 								content)
 						}
+
+						lsp.on_document_symbols(p.current_file_path)
 					}
 				}
 			}
@@ -310,7 +312,7 @@ fn be_notified(notification &sci.SCNotification) {
 	}
 }
 
-[export: messageProc]
+@[export: messageProc]
 fn message_proc(msg u32, wparam usize, lparam isize) isize {
 	if msg == notepadpp.nppm_msgtoplugin {
 		ci := &notepadpp.CommunicationInfo(lparam)
@@ -322,7 +324,7 @@ fn message_proc(msg u32, wparam usize, lparam isize) isize {
 			}
 			io.new_err_message {
 				err_message := <-p.message_queue
-				p.console_window.log_info('$err_message')
+				p.console_window.log_info('${err_message}')
 			}
 			io.pipe_closed {
 				p.proc_manager.check_running_processes()
@@ -334,22 +336,22 @@ fn message_proc(msg u32, wparam usize, lparam isize) isize {
 	return 1
 }
 
-[export: getFuncsArray]
+@[export: getFuncsArray]
 fn get_funcs_array(mut nb_func &int) &FuncItem {
 	menu_functions := {
 		'Start server for current language':   start_lsp_server
 		'Stop server for current language':    stop_lsp_server
 		'Restart server for current language': restart_lsp_server
 		'Stop all configured lsp server':      stop_all_server
-		'-':                                   voidptr(0)
+		'-':                                   unsafe { nil }
 		'Open configuration file':             open_config
 		'Apply current configuration':         apply_config
-		'--':                                  voidptr(0)
+		'--':                                  unsafe { nil }
 		'Toggle console':                      toggle_console
 		'Toggle diagnostics window':           toggle_diag_window
 		'Toggle references window':            toggle_references_window
 		'Toggle symbols window':               toggle_symbols_window
-		'---':                                 voidptr(0)
+		'---':                                 unsafe { nil }
 		'Format document':                     format_document
 		'Format selected text':                format_selected_range
 		'Goto definition':                     goto_definition
@@ -364,12 +366,12 @@ fn get_funcs_array(mut nb_func &int) &FuncItem {
 		'Clear highlighting':                  clear_document_highlighting
 		'Clear peeked implemenation':          clear_implementation
 		'Clear peeked definition':             clear_definition
-		'----':                                voidptr(0)
+		'----':                                unsafe { nil }
 		'About':                               about
 	}
 	mut cmd_id := -1
 	for k, v in menu_functions {
-		if v != voidptr(0) {
+		if v != unsafe { nil } {
 			cmd_id++
 		}
 		mut func_name := [64]u16{init: 0}
@@ -382,11 +384,11 @@ fn get_funcs_array(mut nb_func &int) &FuncItem {
 			})
 		}
 		p.func_items << FuncItem{
-			item_name: func_name
-			p_func: v
-			cmd_id: cmd_id
+			item_name:     func_name
+			p_func:        v
+			cmd_id:        cmd_id
 			init_to_check: false
-			p_sh_key: voidptr(0)
+			p_sh_key:      unsafe { nil }
 		}
 	}
 	unsafe {
@@ -412,7 +414,7 @@ pub fn apply_config() {
 }
 
 fn read_main_config() {
-	p.console_window.log_info('rereading configuration file: $p.main_config_file')
+	p.console_window.log_info('rereading configuration file: ${p.main_config_file}')
 	p.lsp_config = lsp.decode_config(p.main_config_file)
 	p.lsp_client.config = p.lsp_config
 	update_settings()
@@ -473,7 +475,7 @@ fn get_hwnd_infos(hwnd voidptr) (string, string) {
 	}
 }
 
-[callconv: stdcall]
+@[callconv: stdcall]
 fn foreach_window(hwnd voidptr, lparam isize) bool {
 	class_name, _ := get_hwnd_infos(hwnd)
 	if class_name == 'SysTreeView32' {
@@ -483,7 +485,7 @@ fn foreach_window(hwnd voidptr, lparam isize) bool {
 				root_path: &u16(0)
 			}
 			mut tvitem := api.TVITEMEX{
-				text: &u16(0)
+				text:   &u16(0)
 				lparam: &dummy
 			}
 			tvitem.mask = api.tvif_param + api.tvif_text
@@ -499,7 +501,7 @@ fn foreach_window(hwnd voidptr, lparam isize) bool {
 				if api.send_message(hwnd, u32(api.tvm_getitemw), 0, isize(&tvitem)) != 0 {
 					dummy = *tvitem.lparam
 					root_path := unsafe { string_from_wide(dummy.root_path) }
-					p.console_window.log_info('  $root_path')
+					p.console_window.log_info('  ${root_path}')
 					p.workspaces << root_path
 				} else {
 					p.console_window.log_error('Unable to get the root nodes from Folder as Workspace dialog')
@@ -522,7 +524,7 @@ fn get_workspaces_roots() {
 
 pub fn start_lsp_server() {
 	get_workspaces_roots()
-	p.console_window.log_info('starting language server: $p.current_language')
+	p.console_window.log_info('starting language server: ${p.current_language}')
 	check_ls_status(false)
 
 	// create and send a fake nppn_bufferactivated event
@@ -537,7 +539,7 @@ pub fn start_lsp_server() {
 }
 
 pub fn stop_lsp_server() {
-	p.console_window.log_info('stopping language server: $p.current_language')
+	p.console_window.log_info('stopping language server: ${p.current_language}')
 	lsp.stop_ls()
 	p.proc_manager.remove(p.current_language)
 	p.lsp_config.lspservers[p.current_language].initialized = false
@@ -550,7 +552,7 @@ pub fn stop_lsp_server() {
 }
 
 pub fn restart_lsp_server() {
-	p.console_window.log_info('restarting lsp server: $p.current_language')
+	p.console_window.log_info('restarting lsp server: ${p.current_language}')
 	stop_lsp_server()
 	start_lsp_server()
 }
@@ -560,7 +562,7 @@ pub fn stop_all_server() {
 	for language, _ in p.proc_manager.running_processes {
 		lsp.stop_ls()
 		p.lsp_config.lspservers[language].initialized = false
-		p.console_window.log_info('$language initialized = ${p.lsp_config.lspservers[language].initialized}')
+		p.console_window.log_info('${language} initialized = ${p.lsp_config.lspservers[language].initialized}')
 	}
 }
 
@@ -589,7 +591,7 @@ pub fn about() {
 }
 
 fn check_ls_status(check_auto_start bool) {
-	p.console_window.log_info('checking language server status: $p.current_language')
+	p.console_window.log_info('checking language server status: ${p.current_language}')
 	p.proc_manager.check_running_processes()
 	if p.current_language in p.proc_manager.running_processes {
 		p.console_window.log_info('  is already running')
@@ -607,7 +609,7 @@ fn check_ls_status(check_auto_start bool) {
 
 	p.console_window.log_info('  trying to start ${p.lsp_config.lspservers[p.current_language].executable}')
 	start_ls(p.current_language) or {
-		p.console_window.log_error('  $err')
+		p.console_window.log_error('  ${err}')
 		p.lsp_client.cur_lang_srv_running = false
 		p.editor.clear_diagnostics()
 		return
@@ -617,15 +619,18 @@ fn check_ls_status(check_auto_start bool) {
 	p.lsp_client.cur_lang_srv_running = true
 }
 
-fn start_ls(language string) ? {
+fn start_ls(language string) ! {
 	p.proc_manager.start(language, p.lsp_config.lspservers[language]) or { return err }
 	match p.lsp_config.lspservers[language].mode {
 		'io' {
-			go io.read_from_stdout(p.proc_manager.running_processes[language].stdout, p.message_queue)
-			go io.read_from_stderr(p.proc_manager.running_processes[language].stderr, p.message_queue)
+			go io.read_from_stdout(p.proc_manager.running_processes[language].stdout,
+				p.message_queue)
+			go io.read_from_stderr(p.proc_manager.running_processes[language].stderr,
+				p.message_queue)
 		}
 		'tcp' {
-			go io.read_from_socket(p.proc_manager.running_processes[language].socket, p.message_queue)
+			go io.read_from_socket(p.proc_manager.running_processes[language].socket,
+				p.message_queue)
 		}
 		else {}
 	}
@@ -687,8 +692,8 @@ pub fn document_symbols() {
 	lsp.on_document_symbols(p.current_file_path)
 }
 
-[callconv: stdcall]
-[export: DllMain]
+@[callconv: stdcall]
+@[export: DllMain]
 fn main(hinst voidptr, fdw_reason int, lp_reserved voidptr) bool {
 	match fdw_reason {
 		C.DLL_PROCESS_ATTACH {

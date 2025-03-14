@@ -16,4 +16,4 @@ jobs:
       uses: actions/checkout@v3
 
     - name: Build repository app
-      run: v -cc gcc -g -d static_boehm -gc boehm -keepc -enable-globals -shared -d no_backtrace -cflags -static-libgcc -cflags -I"D:\a\NppLspClient\NppLspClient" .
+      run: v -cc clang -g -d static_boehm -gc boehm -keepc -enable-globals -shared -d no_backtrace -cflags -cflags -I"D:\a\NppLspClient\NppLspClient" .

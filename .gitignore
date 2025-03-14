@@ -1,0 +1,9 @@
+*.res
+
+# output
+*.def
+*.dll
+*.exp
+*.ilk
+*.lib
+*.pdb
