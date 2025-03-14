@@ -217,8 +217,8 @@ pub fn (mut d DockableDialog) create(npp_hwnd voidptr, plugin_name string) {
 	}
 	p.npp.register_dialog(d.tbdata)
 	d.hide()
-	d.output_editor_func = sci.SCI_FN_DIRECT(api.send_message(d.output_hwnd, 2184, 0,
-		0))
+	d.output_editor_func = sci.SCI_FN_DIRECT(voidptr(api.send_message(d.output_hwnd, 2184, 0,
+		0)))
 	d.output_editor_hwnd = voidptr(api.send_message(d.output_hwnd, 2185, 0, 0))
 }
 
