@@ -1,23 +1,51 @@
 # Tips & Tricks
 
-1. USE Folder as Workspace(FAW).  
+1. USE Folder as Workspace(FAW).
 The language server protocol (lsp) specifies that the client must specify the root directory of the current source code files. This makes sense when you consider how language servers work. They need to know where the source files are located in order to provide completions, hints, etc. NppLspClient uses the root element of the FAW dialog, to determine this directory. If the currently opened file is not contained in any of the configured root elements or the FAW dialog is not active, the directory of the current file will be used instead.
 
 2. DO NOT USE CLONED buffers.
 
-3. DO NOT use Npp internal builtin functions to reload an open buffer.  
+3. DO NOT use Npp internal builtin functions to reload an open buffer.
 If an open file needs to be reloaded because it has changed externally, close the file and reopen it or use the 'Reload current file' function from the plug-in menu.
 
-4. Use the console dialog  
+4. Use the console dialog
 Starting and stopping of a language server and other relevant information is logged in the console dialog. In addition, the entire communication between client and server is logged in debug mode in order to determine the cause in the event of a problem. Note that using debug mode has a significant impact on overall performance.
 
-5. Use the documentation of the language servers  
+5. Use the documentation of the language servers
 There is no standard method for configuring language servers. Each has its own parameters or additional information about what needs to be done to make the communication between client and server work well. For example, language servers like clangd need information about how the code should be compiled.
 
 # Known working language servers and their sample configuration in alphabetical order
 
 ***`Note that C:\WHATEVER_PATH must be replaced with the concrete full path.`***
 
+## AutoHotkey (v2)
+### Installation
+
+See https://github.com/thqby/vscode-autohotkey2-lsp#use-in-other-editors<br>
+Node.js is required to run the it: https://nodejs.org/
+
+### Notes
+
+In Notepad++, create a user-defined language: "AutoHotkey", extension: "ahk"
+
+(from LSP readme): you can use this script to get the `vscode-autohotkey2-lsp` folder
+```shell
+mkdir vscode-autohotkey2-lsp
+cd vscode-autohotkey2-lsp
+curl.exe -L -o install.js https://raw.githubusercontent.com/thqby/vscode-autohotkey2-lsp/main/tools/install.js
+node install.js
+```
+
+### Configuration
+
+```toml
+[lspservers.autohotkey]
+mode = "io"
+executable = 'C:\SOMEWHERE\node.exe'
+args = 'C:\NOWHERE\vscode-autohotkey2-lsp\server\dist\server.js --stdio'
+auto_start_server = false
+initialization_options = '{"InterpreterPath": "C:\\ELSEWHERE\\AutoHotkey64.exe"}'
+```
 
 ## C/C++
 ### Installation
